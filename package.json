@@ -4,6 +4,7 @@
   "displayName": "Token Meter for Copilot",
   "description": "Visual Studio Code extension to monitor daily GitHub Copilot token usage",
   "version": "1.0.0",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
   },
