@@ -160,19 +160,24 @@ async function updateMeter(statusBarItem, context) {
     // Use entitlement from API output over arbitrary configuration limit if available
     totalLimit = usage.entitlement > 0 ? usage.entitlement : totalLimit;
     let dailyLimit = totalLimit / totalWorkingDays;
+    if (dailyLimit <= 0) {
+        dailyLimit = 1;
+    }
     let allowedUsageTillToday = dailyLimit * elapsedWorkingDays;
-    // Avoid division by zero edge-cases
-    if (allowedUsageTillToday <= 0)
-        allowedUsageTillToday = 1;
-    const percentageOfAllowed = (usage.used / allowedUsageTillToday) * 100;
-    const isOverLimit = usage.used > allowedUsageTillToday;
-    const progressBar = generateProgressBar(percentageOfAllowed, 10);
+    const remainingAllowed = allowedUsageTillToday - usage.used;
+    let batteryPercentage = (remainingAllowed / dailyLimit) * 100;
+    if (batteryPercentage > 100) {
+        batteryPercentage = 100;
+    }
+    const isOverLimit = remainingAllowed < 0;
+    const displayPercentage = Math.max(0, Math.round(batteryPercentage));
+    const progressBar = generateProgressBar(displayPercentage, 10);
     const label = usage.type === 'chat' ? 'Copilot Chat' : 'Copilot';
-    statusBarItem.text = `${label}: ${Math.round(percentageOfAllowed)}% ${progressBar}`;
+    statusBarItem.text = progressBar;
     // Tooltip with detailed stats
     const metricName = usage.type === 'chat' ? 'Chat Messages' : 'Tokens';
     const tooltip = new vscode.MarkdownString();
-    tooltip.appendMarkdown(`**${label} Daily Meter**\n\n`);
+    tooltip.appendMarkdown(`**${label} Daily Meter: ${displayPercentage}%**\n\n`);
     tooltip.appendMarkdown(`- Subscription Cycle: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}\n`);
     tooltip.appendMarkdown(`- Working Days Elapsed: ${elapsedWorkingDays} / ${totalWorkingDays}\n`);
     tooltip.appendMarkdown(`- Total Allowable ${metricName} by Today: **${Math.round(allowedUsageTillToday)}** (Daily Limit: ${dailyLimit.toFixed(1)})\n`);
